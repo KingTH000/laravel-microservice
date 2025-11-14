@@ -25,7 +25,7 @@ class WebController extends Controller
     {
         $response = Http::withHeaders([
             'Accept' => 'application/json',
-        ])->post('http://gateway-service.test/api/auth/register', [
+        ])->post('http://auth:8000/api/register', [
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
@@ -37,7 +37,8 @@ class WebController extends Controller
                 $errors = $response->json()['errors'];
                 return redirect()->back()->withErrors($errors)->withInput();
             }
-            $errors = new MessageBag(['email' => 'Registration failed. Please try again.']);
+            $apiError = $response->body();
+            $errors = new MessageBag(['email' => "Registration failed. API said: $apiError"]);
             return redirect()->back()->withErrors($errors)->withInput();
         }
 
@@ -65,7 +66,7 @@ class WebController extends Controller
     {
         $response = Http::withHeaders([
             'Accept' => 'application/json',
-        ])->post('http://gateway-service.test/api/auth/login', [
+        ])->post('http://auth:8000/api/login', [
             'email' => $request->email,
             'password' => $request->password,
         ]);
@@ -111,7 +112,7 @@ class WebController extends Controller
     public function showProfile(Request $request)
     {
         // Call the internal profile service
-        $response = $this->httpAuth($request)->get('http://gateway-service.test/api/profile/profile');
+        $response = $this->httpAuth($request)->get('http://profile:8000/api/profile');
 
         if ($response->failed()) {
             // Handle if the token expired or something went wrong
@@ -127,7 +128,7 @@ class WebController extends Controller
      */
     public function handleProfile(Request $request)
     {
-        $response = $this->httpAuth($request)->post('http://gateway-service.test/api/profile/profile', [
+        $response = $this->httpAuth($request)->post('http://profile:8000/api/profile', [
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'bio' => $request->bio,

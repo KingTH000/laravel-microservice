@@ -16,7 +16,12 @@ class ProfileController extends Controller
 
         // Find the profile, or create an empty one if it doesn't exist
         $profile = Profile::firstOrCreate(
-            ['user_id' => $user['id']]
+            ['user_id' => $user['id']],
+            [                           
+                'first_name' => null,
+                'last_name' => null,
+                'bio' => null,
+            ]
         );
 
         return response()->json($profile);

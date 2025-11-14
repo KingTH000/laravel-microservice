@@ -25,7 +25,7 @@ class SendWelcomeNotification implements ShouldQueue
 
     public function handle(): void
     {
-        $url = 'http://notification-service.test/api/send-welcome'; // For clarity
+        $url = 'http://notification:8000/api/send-welcome'; // For clarity
 
         // Log that we are about to try
         Log::info('Attempting to send welcome notification for: ' . $this->email);

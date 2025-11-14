@@ -30,7 +30,7 @@ class GatewayController extends Controller
      */
     public function auth(Request $request, $path)
     {
-        $url = 'http://auth-service.test/api/' . $path;
+        $url = 'http://auth:8000/api/' . $path;
 
         $response = $this->buildHttp($request)->send(
             $request->method(), 
@@ -46,7 +46,7 @@ class GatewayController extends Controller
      */
     public function profile(Request $request, $path)
     {
-        $url = 'http://profile-service.test/api/' . $path;
+        $url = 'http://profile:8000/api/' . $path;
 
         $response = $this->buildHttp($request)->send(
             $request->method(),

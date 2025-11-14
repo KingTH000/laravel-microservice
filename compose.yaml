@@ -1,0 +1,74 @@
+services:
+  # 1. The Gateway Service
+  gateway:
+    build: ./gateway-service
+    ports:
+      - "80:8000" # Map port 80 to the container's port 8000
+    volumes:
+      - ./gateway-service:/var/www/html # Sync code for live changes
+    depends_on:
+      - auth
+      - profile
+      - database
+    networks:
+      - microservice-net
+
+  # 2. The Auth Service (Web Server)
+  auth:
+    build: ./auth-service
+    volumes:
+      - ./auth-service:/var/www/html
+    depends_on:
+      - database
+    networks:
+      - microservice-net
+
+  # 3. The Auth Service (Queue Worker)
+  auth_worker:
+    build: ./auth-service
+    command: php artisan queue:work --sleep=3 --tries=3
+    volumes:
+      - ./auth-service:/var/www/html
+    depends_on:
+      - auth
+    networks:
+      - microservice-net
+
+  # 4. The Profile Service
+  profile:
+    build: ./profile-service
+    volumes:
+      - ./profile-service:/var/www/html
+    depends_on:
+      - database
+    networks:
+      - microservice-net
+  
+  # 5. The Notification Service
+  notification:
+    build: ./notification-service
+    volumes:
+      - ./notification-service:/var/www/html
+    networks:
+      - microservice-net
+
+  # 6. The MySQL Database
+  database:
+    image: mysql:8.0
+    ports:
+      - "3306:3306" # Expose MySQL port
+    environment:
+      MYSQL_ROOT_PASSWORD: 'secret'
+    volumes:
+      - db_data:/var/lib/mysql # Persist database data
+      - ./docker/mysql/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - microservice-net
+
+volumes:
+  db_data:
+
+# Define the private network
+networks:
+  microservice-net:
+    driver: bridge

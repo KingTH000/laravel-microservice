@@ -24,7 +24,7 @@ class AuthenticateService
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $token,
             'Accept' => 'application/json',
-        ])->get('http://auth-service.test/api/user');
+        ])->get('http://auth:8000/api/user');
 
         // 3. Check the response from auth-service
         if ($response->failed()) {
