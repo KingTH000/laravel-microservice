@@ -7,9 +7,8 @@ services:
     volumes:
       - ./gateway-service:/var/www/html # Sync code for live changes
     depends_on:
-      - auth
-      - profile
-      - database
+      database:
+        condition: service_healthy
     networks:
       - microservice-net
 
@@ -19,7 +18,8 @@ services:
     volumes:
       - ./auth-service:/var/www/html
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     networks:
       - microservice-net
 
@@ -30,7 +30,8 @@ services:
     volumes:
       - ./auth-service:/var/www/html
     depends_on:
-      - auth
+      database:
+        condition: service_healthy
     networks:
       - microservice-net
 
@@ -40,7 +41,8 @@ services:
     volumes:
       - ./profile-service:/var/www/html
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     networks:
       - microservice-net
   
@@ -61,9 +63,16 @@ services:
       MYSQL_ROOT_PASSWORD: 'secret'
     volumes:
       - db_data:/var/lib/mysql # Persist database data
-      - ./docker/mysql/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # - ./docker/mysql/init/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - microservice-net
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 volumes:
   db_data:
