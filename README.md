@@ -1,8 +1,8 @@
-# Laravel Microservice App with Gemini AI
+# Laravel Microservice App
 
 This project is a complete microservice-based web application built with Laravel 11 and Docker. It demonstrates a fully decoupled architecture with separate services for authentication, user profiles, and notifications, all orchestrated by an API Gateway.
 
-The application features a "Backend for Frontend" (BFF) pattern, where a `gateway-service` serves both a public-facing API and a server-rendered web UI (using Blade). It also integrates with the Google Gemini API for AI-powered content generation.
+The application features a "Backend for Frontend" (BFF) pattern, where a `gateway-service` serves both a public-facing API and a server-rendered web UI (using Blade).
 
 ## Architecture Overview
 
