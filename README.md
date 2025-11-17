@@ -71,7 +71,6 @@ This project uses a database-per-service pattern, where each service is responsi
   * **Containerization**: Docker & Docker Compose
   * **Frontend**: Blade (served by the `gateway-service`)
   * **Queues**: Laravel Queues (Database Driver)
-  * **AI**: Google Gemini API
   * **Mail**: Mailtrap (for testing)
 
 -----
@@ -128,8 +127,6 @@ SESSION_LIFETIME=120
 # CACHE
 CACHE_DRIVER=file
 
-# GEMINI API
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 ```
 
 *(Note: I've included a sample `APP_KEY`. You can generate your own with `php artisan key:generate` if you wish, but this will work.)*
@@ -201,7 +198,6 @@ This only needs to be done once. This command gives your Mac permission to run t
 # In your project root (e.g., ~/Sites)
 chmod +x start.sh
 chmod +x stop.sh
-chmod +x logs.sh
 ```
 
 ### 4\. Run the Application
@@ -250,15 +246,8 @@ Stops and removes all running containers. Your database data will be saved.
 ./stop.sh
 ```
 
-*(To restart after a simple `stop`, just run `docker-compose up -d`)*
+*(To restart after a simple `stop`, just run `docker compose up -d`)*
 
-### `logs.sh`
-
-Incredibly useful for debugging. This follows the logs from *all* services at the same time. Press `Ctrl+C` to stop.
-
-```bash
-./logs.sh
-```
 
 ### Manual Commands
 
@@ -266,10 +255,10 @@ You can still run manual commands inside any container.
 
 ```bash
 # Example: Run a specific command
-docker-compose exec auth php artisan route:list
+docker compose exec auth php artisan route:list
 
 # Example: Get a shell inside the profile-service container
-docker-compose exec profile-service bash
+docker compose exec profile-service bash
 ```
 
 ## Troubleshooting
@@ -279,7 +268,7 @@ docker-compose exec profile-service bash
 **Error: "Registration Failed" on UI**
 
   * **Cause:** The `auth-service` or `profile-service` threw an error.
-  * **Fix:** Run `./logs.sh` or check the specific service's log: `docker-compose logs auth`. The full PHP stack trace will be there.
+  * **Fix:** Run `./logs.sh` or check the specific service's log: `docker compose logs auth`. The full PHP stack trace will be there.
 
 **Error: `SQLSTATE[HY000] [1045] Access denied...`**
 
@@ -289,7 +278,7 @@ docker-compose exec profile-service bash
 **Error: `SQLSTATE[HY000] [2002] Connection refused...`**
 
   * **Cause:** The `auth_worker` (or another service) started before the `database` container was ready.
-  * **Fix:** The `healthcheck` in `docker-compose.yml` should prevent this. If it still happens, your `docker-compose up` command may be running an old configuration. Run `./start.sh` to fix it.
+  * **Fix:** The `healthcheck` in `compose.yaml` should prevent this. If it still happens, your `docker-compose up` command may be running an old configuration. Run `./start.sh` to fix it.
 
 **Error: `Table '...' already exists`**
 
