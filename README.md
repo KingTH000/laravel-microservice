@@ -62,6 +62,7 @@ This project uses a database-per-service pattern, where each service is responsi
   * **Asynchronous Communication**: Uses Laravel Queues (database driver) to send a welcome email via the `notification-service` *without* blocking the registration request.
   * **AI Integration**: A "Generate Bio" feature on the profile page that calls the Google Gemini API.
   * **Secure**: Internal services are not exposed. Web UI is protected by session-based auth.
+  * **Scripted Management**: Includes easy-to-use shell scripts (`start.sh`, `stop.sh`, `logs.sh`) to manage the entire application stack.
 
 ## Technology Stack
 
@@ -84,6 +85,7 @@ Follow these instructions to get the entire application running on your local ma
   * **Docker Desktop**: Must be installed and running.
   * **Google Gemini API Key**: Get a free key from [Google AI Studio](https://aistudio.google.com/app/apikey).
   * **Mailtrap Account**: A free [Mailtrap.io](https://mailtrap.io) account.
+  * **macOS/Linux**: These instructions and scripts are designed for a Unix-based environment (like macOS or Linux).
 
 ### 1\. Clone the Repository
 
@@ -91,7 +93,7 @@ Clone this repository to a folder on your machine (e.g., `~/Sites`). The rest of
 
 ### 2\. Set Up Environment Files (`.env`)
 
-This is the most critical step. Do **NOT** copy your old `.env` files. Create four new, blank `.env` files.
+This is the most critical step. You must create four new, blank `.env` files for the services.
 
   * `touch gateway-service/.env`
   * `touch auth-service/.env`
@@ -165,7 +167,7 @@ APP_DEBUG=true
 # DATABASE (for profiles)
 DB_CONNECTION=mysql
 DB_HOST=database
-DB_PORT=306
+DB_PORT=3306
 DB_DATABASE=profile_db
 DB_USERNAME=root
 DB_PASSWORD=secret
@@ -191,41 +193,33 @@ MAIL_FROM_ADDRESS="no-reply@my-app.com"
 MAIL_FROM_NAME="${APP_NAME}"
 ```
 
-### 3\. Build and Run the Application
+### 3\. Make Scripts Executable
 
-This setup uses a bind mount for the database (`db-data`). If you have run this project before, you **must destroy the old data** to allow the `init.sql` script to create the new databases.
+This only needs to be done once. This command gives your Mac permission to run the shell scripts.
 
 ```bash
 # In your project root (e.g., ~/Sites)
-
-# 1. Stop any running containers and remove old volumes
-docker-compose down -v
-
-# 2. Manually remove the old database data folder
-# THIS IS CRITICAL for the database-per-service setup to work.
-rm -rf ./db-data
-
-# 3. Build and start all containers in the background
-docker-compose up --build -d
-
-# 4. Wait ~30 seconds for the MySQL container to initialize.
+chmod +x start.sh
+chmod +x stop.sh
+chmod +x logs.sh
 ```
 
-### 4\. Run Database Migrations
+### 4\. Run the Application
 
-Now that all containers are running and pointing to their *own* databases, we need to run their migrations.
+Now, you can start the entire application with one command.
 
 ```bash
-# 1. Clear any cached configs (to ensure .env changes are loaded)
-docker-compose exec gateway php artisan config:clear
-docker-compose exec auth php artisan config:clear
-docker-compose exec profile php artisan config:clear
-
-# 2. Run migrations for each service
-docker-compose exec gateway php artisan migrate
-docker-compose exec auth php artisan migrate
-docker-compose exec profile php artisan migrate
+./start.sh
 ```
+
+This script will:
+
+1.  Stop and destroy any old containers and volumes.
+2.  Delete the old database data to ensure a clean install.
+3.  Build and start all 5 containers.
+4.  Wait for the database to be healthy.
+5.  Clear all config caches.
+6.  Run all database migrations.
 
 ### 5\. You're All Set\!
 
@@ -236,40 +230,68 @@ The application is now running.
 
 -----
 
-## 🛠️ Common Issues & Troubleshooting
+## 🛠️ Application Management
 
-**IMPORTANT:** 99% of errors (like "Access Denied" or 500 errors) after changing an `.env` file are caused by a stale config cache.
+Use these scripts in your project root to manage your environment.
 
-**The \#1 Fix for Most Problems:**
+### `start.sh`
+
+Performs a "fresh start." This is the main command you will use. It destroys all old data (including the database) and rebuilds everything from scratch.
 
 ```bash
-# Clear the config cache for the service that is failing
-docker-compose exec gateway php artisan config:clear
-docker-compose exec auth php artisan config:clear
-docker-compose exec profile php artisan config:clear
+./start.sh
 ```
+
+### `stop.sh`
+
+Stops and removes all running containers. Your database data will be saved.
+
+```bash
+./stop.sh
+```
+
+*(To restart after a simple `stop`, just run `docker-compose up -d`)*
+
+### `logs.sh`
+
+Incredibly useful for debugging. This follows the logs from *all* services at the same time. Press `Ctrl+C` to stop.
+
+```bash
+./logs.sh
+```
+
+### Manual Commands
+
+You can still run manual commands inside any container.
+
+```bash
+# Example: Run a specific command
+docker-compose exec auth php artisan route:list
+
+# Example: Get a shell inside the profile-service container
+docker-compose exec profile-service bash
+```
+
+## Troubleshooting
+
+**IMPORTANT:** 99% of errors (like "Access Denied" or 500 errors) after changing an `.env` file are caused by a stale config cache. The `start.sh` script fixes this automatically.
+
+**Error: "Registration Failed" on UI**
+
+  * **Cause:** The `auth-service` or `profile-service` threw an error.
+  * **Fix:** Run `./logs.sh` or check the specific service's log: `docker-compose logs auth`. The full PHP stack trace will be there.
 
 **Error: `SQLSTATE[HY000] [1045] Access denied...`**
 
   * **Cause:** The service is trying to connect to MySQL without a password, or with the wrong password.
-  * **Fix:** Make sure the correct `DB_...` variables are in that service's `.env` file, then run `docker-compose exec <service-name> php artisan config:clear`.
+  * **Fix:** Make sure the correct `DB_...` variables are in that service's `.env` file, then run `./start.sh`.
 
 **Error: `SQLSTATE[HY000] [2002] Connection refused...`**
 
-  * **Cause:** The Laravel app can't find the `database` container.
-  * **Fix:** Make sure `DB_HOST=database` is set in your `.env` file and that the `database` container is running (`docker-compose ps`).
-
-**Error: `SQLSTATE[HY000] [1049] Unknown database 'gateway_db'`**
-
-  * **Cause:** The `init.sql` script did not run, likely because the old `db-data` folder existed.
-  * **Fix:** Run `docker-compose down` and `rm -rf ./db-data`, then run `docker-compose up --build -d` and re-run migrations.
-
-**Error: "Registration Failed" on UI**
-
-  * **Cause:** The `auth-service` threw an error.
-  * **Fix:** Check the logs of the `auth-service` container: `docker-compose logs auth`. The full PHP stack trace will be there.
+  * **Cause:** The `auth_worker` (or another service) started before the `database` container was ready.
+  * **Fix:** The `healthcheck` in `docker-compose.yml` should prevent this. If it still happens, your `docker-compose up` command may be running an old configuration. Run `./start.sh` to fix it.
 
 **Error: `Table '...' already exists`**
 
   * **Cause:** You are running migrations in two different services (e.g., `auth` and `profile`) that are pointed to the *same* database.
-  * **Fix:** Ensure you have correctly followed Step 2 to set up separate databases (`auth_db`, `profile_db`) in each service's `.env` file.
+  * **Fix:** Ensure you have correctly followed Step 2 to set up separate databases (`auth_db`, `profile_db`) in each service's `.env` file. Run `./start.sh` to clear the old state.
