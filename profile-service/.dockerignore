@@ -1,0 +1,30 @@
+# File: .dockerignore
+
+# Ignore Git
+.git
+.gitignore
+
+# Ignore sensitive info
+.env
+.env.example
+
+# Ignore OS-specific files
+.DS_Store
+
+# Ignore Node.js build artifacts
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Ignore Composer dependencies (we install these INSIDE the container)
+vendor/
+
+# Ignore Laravel storage files
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# Ignore development/test files
+docker/
+README.md
